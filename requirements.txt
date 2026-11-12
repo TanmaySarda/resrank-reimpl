@@ -1,0 +1,17 @@
+# Core (needed by everything written so far)
+torch
+numpy
+pyyaml
+
+# Needed once model / data stages are added
+transformers
+huggingface_hub
+kagglehub            # uploading checkpoints as a Kaggle dataset
+accelerate
+
+# Optional, for memory-limited training on Kaggle
+# bitsandbytes   # 8-bit Adam
+# deepspeed      # ZeRO-2 (multi-GPU / larger GPU)
+
+# Dev
+pytest

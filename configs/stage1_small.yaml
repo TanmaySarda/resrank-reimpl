@@ -1,0 +1,24 @@
+# Stage 1 on Kaggle (0.6B). CHECK the memory dry run before trusting these defaults.
+train_file: stage1            # data/02_train/stage1.jsonl
+out_name: stage1_full         # checkpoints/stage1_full (kept apart from the earlier 2,000-sample run called 'stage1')
+init_from: null               # null = start from the pretrained Qwen3 models
+epochs: 1
+micro_batch_size: 1           # was 2: a batch with long passages ran out of memory on a 14.5 GiB T4 (the 12.6 GB dry run used short samples)
+grad_accum: 16                # effective batch 16 (paper: 128, which assumes far more data than a 30 GPU-hour budget allows)
+lr: 6.0e-6                    # paper value
+warmup_ratio: 0.03            # ASSUMED; the paper does not give a schedule
+weight_decay: 0.0             # ASSUMED
+max_grad_norm: 1.0            # ASSUMED
+precision: fp16               # fp32 | fp16 | bf16 (autocast). T4 has no native bf16
+init_loss_scale: 1024         # the default 65536 overflows the encoder's fp16 gradients; 1024 had no skipped steps
+optimizer: adamw8bit          # adamw | adamw8bit (needs bitsandbytes)
+log_every: 1
+save_every: 0                 # step-based snapshots off; time-based below
+save_every_minutes: 15        # snapshot to checkpoints/<out_name>/latest every 15 minutes, then upload
+max_steps: null
+hub_repo: null             # e.g. your-name/resrank-ckpts to back up checkpoints (needs HF_TOKEN); or pass --hub-repo
+# Copy checkpoints out of /kaggle/working (it disappears with the session). Needs KAGGLE_API_TOKEN in the environment.
+publish_dataset: tanmaysarda1/resrank-checkpoints   # <kaggle-username>/<dataset-name>; needs KAGGLE_API_TOKEN
+publish_every_saves: 4        # upload after every 4th snapshot = hourly (snapshots are every 15 min). Each upload is a NEW dataset
+                              # version of about 4.8 GB that counts in full against the 200 GB limit: hourly for 22 h is about 106 GB
+publish_include: []           # extra folders to keep in every version; each one adds its size to every upload

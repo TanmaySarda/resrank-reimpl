@@ -1,0 +1,40 @@
+# Shared settings. Values marked CHECK are assumptions to confirm (see RESRANK_PLAN.md, section 14).
+root: /kaggle/working        # all data/ and checkpoints/ live under here (override with RESRANK_ROOT)
+seed: 42
+
+models:
+  reranker: Qwen/Qwen3-0.6B            # CHECK: post-trained model, not Base; load without LM head
+  encoder: Qwen/Qwen3-Embedding-0.6B   # CHECK: pooling method and normalization
+  hidden_size: 1024                    # asserted against both loaded configs at runtime
+
+loss:
+  tau_infonce: 0.05   # tau1 in the paper (Eq. 6)
+  tau_ranknet: 0.05   # tau2 in the paper (Eq. 7)
+  lambda_infonce: 0.1 # lambda in Eq. 8: L = lambda * InfoNCE + RankNet
+  ranknet_pair_reduction: mean  # CHANGED from the literal Eq. 7 sum. With sum the loss is ~80, encoder gradients overflow
+                                # fp16 unless the loss scale starts <~128, and InfoNCE is ~0.3% of the loss. Mean: ~0.7 vs ~0.3.
+
+fusion:
+  mode: residual      # residual | no_residual (h only) | no_hidden (e only)
+
+model:
+  inject_mode: raw    # raw | unit. Norm report (0.6B, untrained): |e|~102, |h|~127, so the residual is balanced;
+                      # unit-normalized injection gave larger gradients, so raw is kept.
+  inject_scale: 1.0   # multiplier on the injected passage vector
+  max_passage_len: 256   # was 512: the encoder pads each chunk to its longest passage, so one long passage inflates memory. ASSUMED fine (paper gives no value)
+  max_query_len: 128
+  # instruction_template: ...   # optional override; default adapted from the PE-Rank prompt (ASSUMED)
+  gradient_checkpointing: true
+  freeze_embeddings: false   # memory fallback: freezes both token-embedding tables (~25% of params). Deviates from the paper
+  attn_implementation: sdpa     # flash_attention_2 is not available on T4
+  passage_chunk_size: 16
+
+data:
+  english_only: true
+  max_cjk_ratio: 0.0
+  stage2_candidates: 16
+
+eval:
+  k: 10
+  candidates_top_k: 100
+  orders: [original, reversed, random]

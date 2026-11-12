@@ -1,0 +1,23 @@
+train_file: stage2_e2rank_en  # data/02_train/stage2_e2rank_en.jsonl
+out_name: stage2_e2rank
+init_from: stage1_full        # checkpoints/stage1_full
+epochs: 1
+micro_batch_size: 1           # see stage1_small.yaml: micro-batch 2 ran out of memory on long-passage batches
+grad_accum: 16                # effective batch 16
+lr: 6.0e-6
+warmup_ratio: 0.03
+weight_decay: 0.0
+max_grad_norm: 1.0
+precision: fp16
+init_loss_scale: 1024         # the default 65536 overflows the encoder's fp16 gradients; 1024 had no skipped steps
+optimizer: adamw8bit
+log_every: 1
+save_every: 0
+save_every_minutes: 15
+max_steps: null
+hub_repo: null             # e.g. your-name/resrank-ckpts to back up checkpoints (needs HF_TOKEN); or pass --hub-repo
+# Copy checkpoints out of /kaggle/working (it disappears with the session). Needs KAGGLE_API_TOKEN in the environment.
+publish_dataset: tanmaysarda1/resrank-checkpoints   # <kaggle-username>/<dataset-name>; needs KAGGLE_API_TOKEN
+publish_every_saves: 4        # upload after every 4th snapshot = hourly (snapshots are every 15 min). Each upload is a NEW dataset
+                              # version of about 4.8 GB that counts in full against the 200 GB limit: hourly for 22 h is about 106 GB
+publish_include: []           # extra folders to keep in every version; each one adds its size to every upload
